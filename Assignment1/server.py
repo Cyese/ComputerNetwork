@@ -1,12 +1,28 @@
-import socket
+import socketserver
+
+class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        # Perform TCP handshake
+        self.request.sendall(b"Welcome to the server!\n")
+
+        # Handle incoming data
+        while True:
+            data = self.request.recv(1024)
+            if not data:
+                break
+            else:
+                print(data)
+            # Process data here
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
 
 # Create a port for listening 
 port = 4000
 
 # Create a socket object
-listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+listener = ThreadedTCPServer(('localhost', port), ThreadedTCPRequestHandler)
 
-# Bind the socket to a specific address and port
-listener.bind(('localhost', port))
+# Start the server
+listener.serve_forever()
 
-# Listen for incoming connections

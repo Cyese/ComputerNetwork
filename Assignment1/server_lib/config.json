@@ -1,0 +1,6 @@
+{   
+    "maxmiumClient": 10, 
+    "Protocol": "tcp",
+    "port": 19113,
+    "ip": "localhost"
+}
