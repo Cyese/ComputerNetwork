@@ -1,6 +1,9 @@
 from utils import *
 from protocol import Protocol
 
+# class Error(Exception):
+#     UnkwownFilePath = "UnkwownFilePath"
+
 class ClientThreadHandler(threading.Thread):
     def __init__(self, soc : socket.socket, usrname) -> None:
         super().__init__(daemon=True, target=self.run)
@@ -87,6 +90,7 @@ class Client:
         self.Server = (config["ip"], config["port"])
         self.socket : socket.socket
         self.listener : ClientThreadHandler
+        self.running =True
         self.run()
 
     def run(self):
@@ -107,14 +111,96 @@ class Client:
             printAlert("Connection established")
             printAlert(auth + f" {'success' if logged_in else 'failed'}")
 
-        while True:
+        while self.running:
             msg : str= inputMSG("")
-            data = json.dumps({"msg" : msg}).encode()
-            self.socket.send(data)
-            if msg == "disconnect":
-                break
-    # except:
-        #     self.socket.close()
+            command = msg.split()
+            try:
+                match command[0]:
+                    case "PUBLISH":
+                        fname = command[1] if len(command) <=  2 else ""
+                        lname = command[2] if len(command) <=  3 else ""
+                        data = Client.publish(filename=fname, localname=lname)
+                        self.socket.send(json.dumps(data).encode())
+                    case "CHECK":
+                        fname = command[1] if len(command) <=  2 else ""
+                        count = command[2] if len(command) <=  3 else ""
+                        data = Client.check(filename=fname, count=count)
+                        self.socket.send(json.dumps(data).encode())
+                        data = json.loads(self.socket.recv(1024).decode())
+                        # TODO: move this data up to UI
+                    case "DISCONNECT":
+                        self.socket.send(json.dumps(Client.disconnect()).encode())
+                        self.socket.close()
+                        self.listener.stop()
+                        self.running = False
+                    case "FETCH":
+                        pass
+                    case "REMOVE":
+                        pass
+                    case "HOSTNAME":
+                        pass
+                    case "HELP":
+                        pass
+                    case "PASSWORD":
+                        pass
+                    case _:
+                        printFailed("Invalid command. Use HELP for more information")
+            except ValueError as e:
+                printAlert(str(e))
+            except FileNotFoundError as e:
+                printAlert(str(e))
+            except FileExistsError as e:
+                printAlert(str(e))
+
+    @staticmethod
+    def publish(**kwargs):
+        lname = kwargs.get("localname", "")
+        fname = kwargs.get("filename", "")
+        if fname == "" or lname == "":
+            raise ValueError("filename and localname are required")
+        elif not os.path.exists(lname):  
+            raise FileNotFoundError(f"{lname} is not available")
+        elif not os.path.isfile(lname):  
+            raise FileExistsError(f"{lname} is not a file")
+        data = Protocol.publish.copy()
+        data.update({"filename" : fname, "localname" : lname})
+        return data
+    
+    @staticmethod
+    def check(**kwargs):
+        fname = kwargs.get("filename", "")
+        count = kwargs.get("count", "")
+        if not count.isdecimal():
+            raise ValueError("count must be an integer")
+        if fname == "":
+            raise ValueError("filename is required")
+        data = Protocol.find.copy()
+        data.update({"filename" : fname, "count" : count})
+        return data
+
+    @staticmethod
+    def disconnect():
+        data = Protocol.disconnect.copy()
+        return data
+
+    @staticmethod
+    def fetch(**kwargs):
+        # This gonna painfully long
+        pass
+
+    @staticmethod
+    def remove(**kwargs):
+        pass
+
+    @staticmethod
+    def modify(**kwargs):
+        pass
+
+    @staticmethod
+    def help():
+        # Print all available commands
+        
+        pass
 
     def signup(self, usrname, psswd): 
         data = Protocol.signup.copy()
