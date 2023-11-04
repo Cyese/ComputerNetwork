@@ -1,4 +1,4 @@
 from client import *
 
 
-ClientConnector()
+Client()

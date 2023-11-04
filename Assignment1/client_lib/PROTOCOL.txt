@@ -1,0 +1,37 @@
+### Client - Client ###
+Using JSON package, Format:
+
+# Command : CONNECT
+Type : connect
+Action : request
+Key : Key
+
+# Command : CONNECT
+Type : connect
+Action : response
+Connection : allowed | refused 
+
+# Command : GET
+Type : get
+Action : get
+file: filename
+
+# Command : POST
+Type : post
+Action : reply
+file: filename
+id : id
+format : .txt | .pdf | .png | null (if file not found)
+length : length of file
+status : OK | ERROR
+
+# Command : POST
+Type : post
+Action : transmit
+offset : offset
+data : filedata in bytes
+
+# Command : IDENTIFY
+Type : identify
+Action : post
+port : port

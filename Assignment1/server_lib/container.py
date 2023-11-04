@@ -1,31 +1,15 @@
 from utils import *
 
-# class IP_User:
-#     def __init__(self, ip, usern):
-#         self.ip = ip
-#         self.filename: dict[str, str] =dict() # filename: filepath
-    
-#     def add_file(self, filename, filepath) -> None:
-#         self.filename[filename] = filepath  
-    
-#     def remove_file(self, filename) -> None:
-#         del self.filename[filename]
-
-# class User:
-#     def __init__(self, usrname, password) -> None:
-#         self.usrname = usrname
-#         self.password= password 
-
 class Storage:
-    def __init__(self) :
-        if os.path.exists("data.json") and os.path.exists("user.json"):
-            self.FileList : dict[str, list[str]] = json.load(open("data.json", "r")) # filename: iplist 
-            self.Username : dict[str, str] = json.load(open("user.json", "r")) # Username : Password
-            # print(self.Username)
-        else :
-            self.FileList : dict[str, list[str]] = dict() # filename: IP list   
-            self.Username : dict[str, str] = dict() # IP : Username
-        return 
+
+    def __init__(self):
+        if os.path.exists("data.csv") and os.path.exists("user.csv"):
+            self.FileList: pd.DataFrame = pd.read_csv("data.csv", index_col=0)
+            self.UserList: pd.DataFrame = pd.read_csv("user.csv", index_col=0)
+        else:
+            self.FileList: pd.DataFrame = pd.DataFrame(columns=["filename", "IP", "time"])
+            self.UserList: pd.DataFrame = pd.DataFrame(columns=["user", "password", "IP", "port"])
+        return
 
     def addfile(self, filename: str, IP: str) -> bool:
         # self.FileList.update(filename, self.FileList.get(filename, list([IP])))
@@ -35,16 +19,39 @@ class Storage:
         return True
         pass
 
-    def signup(self, data: dict[str, str]) -> bool:
+    def signup(self, data: dict[str, str], address: tuple) -> bool:
         usrname : str= data["username"]
         passwrd : str = data["password"]
-        self.Username[usrname] = passwrd
-        json.dump(self.Username, open("user.json", "w+"))
-        return True
-
-    def signin(self,data : dict) -> bool:
-        usrname : str = data["username"]
-        passwrd : str = data["password"]
-        if self.Username.get(usrname, "") == passwrd:
+        if self.UserList.get(usrname) is None:
+            self.UserList.loc[len(self.UserList)]= {"user": usrname, "password": passwrd, "IP": address[0], "port" : address[1]} # type: ignore 
+            self.write()
+            printMSG("Signup success from " + str(address))
             return True
         return False
+
+    def signin(self,data : dict, address) -> bool:
+        usrname : str = data["username"]
+        passwrd : str = data["password"]
+        user_row = self.UserList[self.UserList['user'] == usrname]
+        # print(user_row)
+        if not user_row.empty:
+            stored_password = str(user_row['password'].iloc[0] ) # Get the password from the DataFrame
+            if stored_password == passwrd:
+                printMSG("Login success from " + str(address))
+                return True
+        return False
+        
+    def updateIP(self, usr: str, ip, port) -> None:
+        self.UserList.loc[self.UserList['user'] == usr, ['IP', 'port']] = [ip, port]
+        self.write()
+        return
+    
+    def write(self) -> None:
+        t1 = threading.Thread(target=self.FileList.to_csv, args=(["data.csv"]), kwargs={})
+        t2 = threading.Thread(target=self.UserList.to_csv, args=(["user.csv"]), kwargs={})
+        t1.start()
+        t2.start()
+        
+        t1.join()
+        t2.join()
+        return

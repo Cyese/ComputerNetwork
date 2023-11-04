@@ -1,0 +1,52 @@
+### Server - Client ###
+Using Json package, Format:
+
+# Command : LOGIN
+Type : auth
+Action : login
+Username : username
+Password : password
+
+# Command : SIGNUP
+Type : auth
+Action : signup
+Username : username
+Password : password
+
+# Command : AUTH
+Type : auth
+Action : authenticate
+Status : success | fail
+
+# Command : PING
+Type : ping
+Action : ping
+Host : hostname
+
+# Command : PING
+Type : ping
+Action : reply
+Status : availble | full
+
+# Command : PUBLISH
+Type : publish
+Action : publish
+localname : localname
+filename : filename
+
+# Command : FETCH
+Type : fetch
+Action : fetch
+filename : filename
+host : hostname
+
+# Command : CONNECT
+Type : connect
+Action : establish
+host : hostname
+port : portnumber
+key : key
+
+# Command : DISCONNECT
+Type : AUTH
+Action : disconnect
