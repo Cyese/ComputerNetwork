@@ -55,3 +55,9 @@ class Storage:
         t1.join()
         t2.join()
         return
+    
+    def gethostnames(self, usrname) -> tuple[str, str]:
+        user_row = self.UserList[self.UserList['user'] == usrname]
+        if not user_row.empty:
+            return str(user_row['IP'].iloc[0]), user_row['port'].iloc[0]
+        return "", ""

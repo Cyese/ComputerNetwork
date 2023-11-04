@@ -8,8 +8,7 @@ class ClientThreadHandler(threading.Thread):
         self.user = usrname
         self.terminate = False
         self.child : list[Transimition] = list()
-        self.socket.listen()
-        self.run() 
+        self.socket.listen() 
         self.keyList = []
     
     def run(self):
@@ -36,7 +35,6 @@ class ClientThreadHandler(threading.Thread):
                             soc.send(reply)
                             soc.close()
                         case _:
-                            
                             soc.close()
                 else:
                     pass
@@ -90,45 +88,33 @@ class Client:
         self.socket : socket.socket
         self.listener : ClientThreadHandler
         self.run()
-        
-    # def connectToServer(self, username: str, password: str, auth: str = "signup") :
-    #     # Depricated
-    #     # Load server connection port
-        
-    #     # Make a TCP connection request:
-
-    #     data = json.dumps({"auth" : auth, "username" : username, "password" : password})
-    #     self.socket.sendto(data.encode(), self.Server)
-    #     data = json.loads(self.socket.recv(1024).decode())
-    #     if data["connection"] == "refuse": 
-    #         return (False, data["type"])
-    #     return (True, data["type"])
 
     def run(self):
-        try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect(self.Server)
-            logged_in : bool = False
-            while not logged_in:
-                signup = inputMSG("Type 0 for login and 1 for signup : ")
-                usr = inputMSG("Username : ")
-                psswd =inputMSG("Password : ")
-                if signup == "1":
-                    auth = "signup"
-                    logged_in = self.signup(usr, psswd)
-                else: 
-                    auth = "login"
-                    logged_in = self.login(usr, psswd)
-                printAlert(auth + f" {'success' if logged_in else 'failed'}")
+        # try:
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect(self.Server)
+        logged_in : bool = False
+        while not logged_in:
+            signup = inputMSG("Type 0 for login and 1 for signup : ")
+            usr = inputMSG("Username : ")
+            psswd =inputMSG("Password : ")
+            if signup == "1":
+                auth = "signup"
+                logged_in = self.signup(usr, psswd)
+            else: 
+                auth = "login"
+                logged_in = self.login(usr, psswd)
+            printAlert("Connection established")
+            printAlert(auth + f" {'success' if logged_in else 'failed'}")
 
-            while True:
-                msg : str= inputMSG("")
-                data = json.dumps({"msg" : msg}).encode()
-                self.socket.send(data)
-                if msg == "disconnect":
-                    break
-        except:
-            self.socket.close()
+        while True:
+            msg : str= inputMSG("")
+            data = json.dumps({"msg" : msg}).encode()
+            self.socket.send(data)
+            if msg == "disconnect":
+                break
+    # except:
+        #     self.socket.close()
 
     def signup(self, usrname, psswd): 
         data = Protocol.signup.copy()
@@ -164,7 +150,7 @@ class Client:
         except:
             soc.bind(("localhost", 60001))
         address = soc.getsockname()
-        # self.listener = threading.Thread(target=ClientThreadHandler, args=(soc, usrname))
+        self.listener = ClientThreadHandler(soc, usrname)
         # self.listener.daemon = True
         self.listener.start()
         return address
