@@ -109,14 +109,14 @@ class ServerGUI(tk.Tk):
 
 
         self.discovered_files = ttk.Treeview(self.frame_list)
-        self.discovered_files["column"] = ("STT", "File Name")
+        self.discovered_files["column"] = ("STT", "Filename")
 
-        self.discovered_files.column("#1", width=30)
-        self.discovered_files.column("#2", width=200)
+        self.discovered_files.column("#0",width=0,stretch=0)
+        self.discovered_files.column("STT",width=30)
+        self.discovered_files.column("Filename",width=200) 
 
         self.discovered_files.heading("STT", text="STT")
-        self.discovered_files.heading("#2", text="Tên File")
-        self.discovered_files.pack()
+        self.discovered_files.heading("Filename", text="Tên File")
 
 
     def ping(self):
@@ -128,7 +128,8 @@ class ServerGUI(tk.Tk):
     def discover(self):
         hostname = self.hostname_entry.get()
 
-
+        self.discovered_files.pack()
+        self.frame_list.pack()
         # try:
         #     self.discovered_files.pack_forget()
             
