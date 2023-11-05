@@ -76,7 +76,8 @@ class ServerGUI(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         
-        self.geometry("500x200")
+        self.title("P2P-server")
+        self.geometry("500x300")
         # self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.resizable(width=False, height=False)
 
@@ -85,10 +86,16 @@ class ServerGUI(tk.Tk):
         
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
+
         frame_input = tk.Frame(container)
         frame_input.pack(padx=10,pady=10)
+
+        self.label_notice = tk.Label(container, text="",fg="red")
+        self.label_notice.pack()
+
         frame_btn = tk.Frame(container)
         frame_btn.pack(padx=10,pady=10)
+
         self.frame_list = tk.Frame(container)
         self.frame_list.pack(padx=10,pady=10)
 
@@ -101,7 +108,6 @@ class ServerGUI(tk.Tk):
         self.discover_btn = tk.Button(frame_btn, text="Discover", 
                                    bg=BUTTON_COLOR, width=BUTTON_WIDTH,
                                    command=self.discover)
-        
         self.hostname_label.pack(side="left")
         self.hostname_entry.pack(side="left")
         self.ping_btn.pack(side="right")
@@ -112,8 +118,8 @@ class ServerGUI(tk.Tk):
         self.discovered_files["column"] = ("STT", "Filename")
 
         self.discovered_files.column("#0",width=0,stretch=0)
-        self.discovered_files.column("STT",width=30)
-        self.discovered_files.column("Filename",width=200) 
+        self.discovered_files.column("STT",width=60)
+        self.discovered_files.column("Filename",width=300) 
 
         self.discovered_files.heading("STT", text="STT")
         self.discovered_files.heading("Filename", text="Tên File")
@@ -122,28 +128,45 @@ class ServerGUI(tk.Tk):
     def ping(self):
         hostname = self.hostname_entry.get()
 
+        if not hostname: 
+            self.label_notice.config(text="Bạn chưa nhập hostname")
+            return 
+        else:
+            self.label_notice.config(text="")
+        #########################
+        # XỬ LÝ BACKEND
+        #########################
         # self.show_message_box()
         pass
 
     def discover(self):
         hostname = self.hostname_entry.get()
 
+        if not hostname: 
+            self.label_notice.config(text="Bạn chưa nhập hostname")
+            return
+        else:
+            self.label_notice.config(text="")
+
+        #########################
+        # XỬ LÝ BACKEND
+        #########################
+        # self.discovered_files.pack_forget()
+        
+        # x = self.discovered_files.get_children()
+        # for item in x:
+        #     self.discovered_files.delete(item)
+
+        # self.discovered_files.insert("", index="end", iid=1, 
+        #         values=(1, "test1.txt"))
+        # self.discovered_files.insert("", index="end", iid=2, 
+        #         values=(2, "test2.txt"))
+        # for i in range(1, 101):
+        #     self.discovered_files.insert("", "end", values=(i, "Description " + str(i)))
+        
         self.discovered_files.pack()
-        self.frame_list.pack()
-        # try:
-        #     self.discovered_files.pack_forget()
-            
-        #     x = self.discovered_files.get_children()
-        #     for item in x:
-        #         self.discovered_files.delete(item)
-
-        #     self.discovered_files.insert(index="end", iid=1, 
-        #             values=(1, "Alice.txt"))
-            
-
-        #     self.frame_list.pack(pady=10)
-        # except:
-        #     print("ERROR")
+        self.frame_list.pack(pady=10)
+       
             
         pass
 
