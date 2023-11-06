@@ -1,8 +1,6 @@
 from utils import *
 from protocol import Protocol
 
-# class Error(Exception):
-#     UnkwownFilePath = "UnkwownFilePath"
 
 class ClientThreadHandler(threading.Thread):
     def __init__(self, soc : socket.socket, usrname) -> None:
@@ -72,16 +70,83 @@ class ClientThreadHandler(threading.Thread):
                     return (False, data)
         return ()
         
+    def makeConnection(self, address: tuple, key):
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.connect(address)
+        data = Protocol.connect_req.copy()
+        data.update({"key" : key})
+        soc.send(json.dumps(data).encode())
+        data = json.loads(soc.recv(1024).decode())
+        if data["connection"] == "allowed":
+            transmitter = Transimition(soc, "recv")
+            self.child.append(transmitter)
+        else:
+            soc.close()
+            return None
 
 class Transimition(threading.Thread):
-    def __init__(self, soc : socket.socket):
-        super().__init__(daemon=True, target=self.run)
+    def __init__(self, soc : socket.socket, role : str):
+        super().__init__(daemon=True, target=self.run, args=(role,))
+        self.fname : os.PathLike
+        # os.path.join(os.getcwd(), "test.py")
         self.socket = soc
         self.terminate = False
 
 
-    def run(self):
-        pass
+    def run(self, role: str):
+        try:
+            match role:
+                case "send":
+                    self.send()
+                case "recv":
+                    self.recv() 
+        except Exception as e:
+            printAlert(f"{e.__name__}:{str(e)}")
+            printFailed("Aborted")
+        finally:
+            self.socket.close()
+
+
+    def recv(self):
+        data = json.loads(self.socket.recv(1024).decode())
+        self.fname = data["filename"]
+        length = data["length"]
+        if data["status"] == "Error":
+            raise ConnectionAbortedError("File is not available")
+        recv_length = 0
+        with open(os.path.join(os.getcwd(),self.fname), "wb") as file:
+            data = json.loads(self.socket.recv().decode())
+            recved = data["data"]
+            file.write(recved)
+        if length != recv_length:
+            return False
+        return True
+
+
+    def send(self):
+        filename = self.lname
+        if not os.path.exists(filename) or not os.path.isfile(filename):
+            reply = Protocol.post_rep.copy()
+            reply.update({"status" : "Error"})
+            self.socket.send(json.dumps(reply).encode())
+            raise FileNotFoundError(f"{filename} is not available")
+        fname = os.path.split(filename)[-1]    
+        length = os.path.getsize(filename)  
+        reply = Protocol.post_rep.copy()
+        reply.update({"status" : "OK", "length" : length, "file" : fname})
+        self.socket.send(json.dumps(reply).encode())
+        with open(filename, "rb") as file:
+            offset = 0
+            while offset < length:
+                data = file.read(1024)
+                offset += len(data)
+                reply = Protocol.post_transmit.copy()
+                reply.update({"offset" : offset, "data" : data})
+                self.socket.send(json.dumps(reply).encode())
+        return True
+
+    def addfile(self, filename):
+        self.fname = filename
 
 
 class Client:
@@ -134,15 +199,27 @@ class Client:
                         self.listener.stop()
                         self.running = False
                     case "FETCH":
-                        pass
+                        fname = command[1] if len(command) <=  2 else ""
+                        hostname = command[2] if len(command) <=  3 else ""
+                        data = Client.fetch(filename=fname, hostname=hostname)
+                        self.socket.send(json.dumps(data).encode())
+                        reply = json.loads(self.socket.recv(1024).decode())
+                        address = (reply["hostname"], reply["port"])
+                        key = reply.get("key")
+                        self.listener.makeConnection(address, key)
+
                     case "REMOVE":
-                        pass
+                        fname = command[1] if len(command) <=  2 else ""
+                        data = Client.remove(filename=fname)
+                        self.socket.send(json.dumps(data).encode())
                     case "HOSTNAME":
-                        pass
-                    case "HELP":
-                        pass
+                        usr = command[1] if len(command) <=  2 else ""
+                        self.socket.send(json.dumps(Client.modify(username=usr)).encode())
                     case "PASSWORD":
-                        pass
+                        psswd = command[1] if len(command) <=  2 else ""
+                        self.socket.send(json.dumps(Client.modify(password=psswd)).encode())
+                    case "HELP":
+                        Client.help()
                     case _:
                         printFailed("Invalid command. Use HELP for more information")
             except ValueError as e:
@@ -185,22 +262,44 @@ class Client:
 
     @staticmethod
     def fetch(**kwargs):
-        # This gonna painfully long
-        pass
+        fname = kwargs.get("filename", "")
+        hostname = kwargs.get("hostname", "")
+        if fname == "":
+            raise ValueError("filename is required")
+        data = Protocol.fetch.copy()
+        data.update({"filename" : fname, "hostname" : hostname})
+        return data
 
     @staticmethod
     def remove(**kwargs):
-        pass
+        fname = kwargs.get("filename", "")
+        if fname == "":
+            raise ValueError("filename is required")
+        data = Protocol.remove.copy()
+        data.update({"filename" : fname})
+        return data
 
     @staticmethod
     def modify(**kwargs):
-        pass
+        usrname = kwargs.get("username", "")
+        psswd = kwargs.get("password", "")
+        data = Protocol.modify.copy()
+        data.update({"username" : usrname, "password" : psswd})
+        return data
 
     @staticmethod
     def help():
-        # Print all available commands
-        
-        pass
+        data = {"PULISH" : ["PUBLISH <filename> <localname>", "Publish a file to the server"],
+                "FETCH" : ["FETCH <filename> <hostname>", "Fetch a file from the hostname, newest if <hostname> is omitted"],
+                "REMOVE" : ["REMOVE <filename>", "Remove a file from the server"],
+                "CHECK" : ["CHECK <filename> <count>", "Check if a file is available on the server"],
+                "DISCONNECT" : ["DISCONNECT", "Disconnect from the server"],
+                "HOSTNAME" : ["HOSTNAME <hostname>", "Change your username"],
+                "PASSWORD" : ["PASSWORD <password>", "Change your password"],
+                "HELP" : ["HELP", "Print this help message"]
+                }
+        for value in data.values():
+            printAlert(f"{value[0]:30} : {value[1]}")
 
     def signup(self, usrname, psswd): 
         data = Protocol.signup.copy()
