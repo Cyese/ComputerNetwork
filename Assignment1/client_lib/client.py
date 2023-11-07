@@ -165,7 +165,10 @@ class Client:
     def run(self):
         # try:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect(self.Server)
+        try:
+            self.socket.connect(self.Server)
+        except:
+            self.socket.connect((self.Server[0], self.Server[1]+2))
         logged_in : bool = False
         while not logged_in:
             signup = inputMSG("Type 0 for login and 1 for signup : ")
@@ -213,7 +216,7 @@ class Client:
                         data = Client.fetch(filename=fname, hostname=hostname)
                         self.socket.send(json.dumps(data).encode())
                         reply = json.loads(self.socket.recv(1024).decode())
-                        address = (reply["hostname"], reply["port"])
+                        address = (reply["hostname"], int(reply["port"]))
                         key = reply.get("key")
                         self.listener.makeConnection(address, key)
 

@@ -30,15 +30,16 @@ class Service(threading.Thread):
                     IP = self.socket.getpeername()[0]
                     self.storage.addfile(fname, lname, IP)
                 case "FETCH":
-                    fname = msg.get("fname")
+                    print(msg)
+                    fname = msg.get("filename")
                     hostname = msg.get("hostname", "")
-                    addr, lname = self.storage.get("fname",hostname=hostname)
+                    addr, lname = self.storage.get(fname,hostname=hostname)
                     key = "1234"
                     tosender = Protocol.getFile.copy()
                     tosender.update({"localname": lname, "key": key})
                     self.socket.sendto(json.dumps(tosender).encode(), addr) 
                     torecv = Protocol.connect.copy()
-                    torecv.update({"key": key, "hostname" : addr})
+                    torecv.update({"key": key, "hostname" : str(addr)})
                     self.socket.send(json.dumps(torecv).encode())    
                 case "FIND":
                     fname = msg.get("fname")
@@ -67,7 +68,10 @@ class Controller(threading.Thread):
         self.storage = storage
         self.online = True
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((self.ip, self.port))
+        try:
+            self.server.bind((self.ip, self.port))
+        except:
+            self.server.bind((self.ip, self.port+2))
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.listen()
         

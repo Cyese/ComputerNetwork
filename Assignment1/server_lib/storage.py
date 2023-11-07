@@ -73,9 +73,13 @@ class Storage:
         lname : str
         addr : tuple
         if host is None:
-            _ , lname, IP = self.UserList[self.FileList["fname"] == fname].loc[0]
+            data = self.FileList.loc[self.FileList["fname"] == fname].to_dict(orient="records")[0]
+
+            print(data)
+            lname, IP = data["lname"], data["IP"]
             addr = self.gethostnames("IP", IP)
         else:
-            _ , lname, IP = self.UserList[self.FileList["fname"] == fname and self.FileList["IP"] == host].loc[0]
+            data = self.FileList[self.FileList["fname"] == fname and self.FileList["IP"] == host].to_dict(orient="records")[0]
+            lname, IP = data["lname"], data["IP"]
             addr = self.gethostnames("IP", IP)
         return (addr, lname)
