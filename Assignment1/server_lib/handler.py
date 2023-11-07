@@ -1,32 +1,60 @@
-from container import *
+from storage import *
 from protocol import Protocol
 
 
 class Service(threading.Thread):
-    def __init__(self, clientIP: str, sock: socket.socket) -> None:
-        super().__init__(daemon=True, name=clientIP, target=self.chat)
+    def __init__(self, clientIP: str, sock: socket.socket, storage) -> None:
+        super().__init__(target=self.chat)
         self.IP = clientIP
         self.socket = sock
         self.disconnect = False
         # self.chat()
+        self.storage: Storage = storage
+        self.start()
 
     def chat(self):
-        # To do: adding function based on the requirement </3 ### for now:
-        log = ""
-        while True:
-            msg = json.loads(self.socket.recv(1024).decode())["msg"]
-            if msg == "disconnect":
-                with open(f"{threading.current_thread().name}.txt", "w") as file:
-                    file.write(log)
-                break
-            log += msg + '\n'
+        pass
 
     def run(self):
+        log = []
         while not self.disconnect:
-            # TODO: hadling incoming request and send back the response
-            pass
-        return
+        #     # TODO: hadling incoming request and send back the response
+            msg = json.loads(self.socket.recv(1024).decode())
+            if msg["type"] == "AUTH" and msg == "disconnect":
+                self.stop()
+                return
+            match msg["type"]:
+                case "PUBLISH":
+                    fname = msg.get("fname")
+                    lname = msg.get("lname")
+                    IP = self.socket.getpeername()[0]
+                    self.storage.addfile(fname, lname, IP)
+                case "FETCH":
+                    fname = msg.get("fname")
+                    hostname = msg.get("hostname", "")
+                    addr, lname = self.storage.get("fname",hostname=hostname)
+                    key = "1234"
+                    tosender = Protocol.getFile.copy()
+                    tosender.update({"localname": lname, "key": key})
+                    self.socket.sendto(json.dumps(tosender).encode(), addr) 
+                    torecv = Protocol.connect.copy()
+                    torecv.update({"key": key, "hostname" : addr})
+                    self.socket.send(json.dumps(torecv).encode())    
+                case "FIND":
+                    fname = msg.get("fname")
+                    data = self.storage.find(fname)
+                    rep = Protocol.find.copy()
+                    rep.update({"hostlist" : data})
+                    self.socket.send(json.dumps(rep).encode())
+                case _:
+                    pass  
 
+    def stop(self):
+        self.disconnect = True
+        self.socket.close()
+
+    def publish(self, msg: str):
+        self.socket.send(msg.encode())
 
 class Controller(threading.Thread):
     def __init__(self, storage: Storage) -> None:
@@ -41,6 +69,7 @@ class Controller(threading.Thread):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((self.ip, self.port))
         self.server.listen()
+        
 
     def run(self):
         try:
@@ -49,7 +78,6 @@ class Controller(threading.Thread):
                     # Aunthenticate upcoming request, assign a worker to that port
                     connection, address = self.server.accept()
                     recv = connection.recv(1024).decode()
-                    # print(recv)
                     data = json.loads(recv)
                     print(data)
                     if self.aunthenticate(data, address):
@@ -62,9 +90,9 @@ class Controller(threading.Thread):
                         data = json.loads(data.decode())
                         ip, port = data.get("ip"), data.get("port")
                         self.storage.updateIP(usr, ip, port)
-                        new_worker = Service(ip, connection)
+                        print(f"Connection open {type(connection)}")
+                        new_worker = Service(ip, connection, self.storage)
                         self.thread.append(new_worker)
-                        new_worker.start()
                     else:
                         data = json.dumps(
                             {"connection": "unauthorize", "type": "AUTH"})
@@ -87,11 +115,8 @@ class Controller(threading.Thread):
             auth = self.storage.signin(data, address)
         return auth
 
-    # def __del__(self):
-    #     self.stop()
-
     def ping(self, hostname: str) -> dict:
-        address = self.storage.gethostnames(hostname)
+        address = self.storage.gethostnames(hostname, "user")
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         data = Protocol.ping.copy()
         data = json.dumps(data).encode()

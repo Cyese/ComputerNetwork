@@ -1,6 +1,7 @@
 from handler import *
 
 server = Server()
+input()
 while True:
     val = int(input("[>]"))
     match val:

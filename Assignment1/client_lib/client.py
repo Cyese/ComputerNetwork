@@ -21,20 +21,23 @@ class ClientThreadHandler(threading.Thread):
                     data = json.loads(soc.recv(1024).decode())
                     match data["type"]:
                         case "CONNECT": 
-                            res= self.connect(data)
+                            res = self.connect(data)
                             if len(res) == 2:
                                 reply = json.dumps(res[1]).encode()
                                 soc.send(reply)
                                 if not res[0]:
                                     soc.close()
-                                else: 
-                                    trasmitter = Transimition(soc)
-                                    self.child.append(trasmitter)
-                                    trasmitter.start()
+                                else:
+                                    transmitter = Transimition(soc, "send")
+                                    transmitter.addfile(data["localname"])
+                                    self.child.append(transmitter)
+                                    transmitter.start()
+                                    
                         case "PING":
                             reply = json.dumps(self.ping()).encode()
                             soc.send(reply)
                             soc.close()
+                        
                         case _:
                             soc.close()
                 else:
@@ -80,9 +83,10 @@ class ClientThreadHandler(threading.Thread):
         if data["connection"] == "allowed":
             transmitter = Transimition(soc, "recv")
             self.child.append(transmitter)
+            self.start()
         else:
             soc.close()
-            return None
+        return None
 
 class Transimition(threading.Thread):
     def __init__(self, soc : socket.socket, role : str):
@@ -101,7 +105,7 @@ class Transimition(threading.Thread):
                 case "recv":
                     self.recv() 
         except Exception as e:
-            printAlert(f"{e.__name__}:{str(e)}")
+            printAlert({str(e)})
             printFailed("Aborted")
         finally:
             self.socket.close()
@@ -141,7 +145,7 @@ class Transimition(threading.Thread):
                 data = file.read(1024)
                 offset += len(data)
                 reply = Protocol.post_transmit.copy()
-                reply.update({"offset" : offset, "data" : data})
+                reply.update({"data" : data})
                 self.socket.send(json.dumps(reply).encode())
         return True
 
@@ -178,29 +182,33 @@ class Client:
 
         while self.running:
             msg : str= inputMSG("")
-            command = msg.split()
+            command = msg.split(" ")
             try:
                 match command[0]:
                     case "PUBLISH":
-                        fname = command[1] if len(command) <=  2 else ""
-                        lname = command[2] if len(command) <=  3 else ""
-                        data = Client.publish(filename=fname, localname=lname)
+                        fname = command[1] if len(command) >=  2 else ""
+                        lname = command[2] if len(command) ==  3 else ""
+                        data = Client.publish(fname=fname, lname=lname)
                         self.socket.send(json.dumps(data).encode())
                     case "CHECK":
-                        fname = command[1] if len(command) <=  2 else ""
-                        count = command[2] if len(command) <=  3 else ""
-                        data = Client.check(filename=fname, count=count)
+                        fname = command[1] if len(command) >=  2 else ""
+                        count = command[2] if len(command) ==  3 else 3
+                        data = Client.check(fname=fname, count=count)
                         self.socket.send(json.dumps(data).encode())
                         data = json.loads(self.socket.recv(1024).decode())
                         # TODO: move this data up to UI
+                        hostlist : dict = data["hostlist"]
+                        for value in hostlist.values():
+                            printAlert(f"{value}")
+
                     case "DISCONNECT":
                         self.socket.send(json.dumps(Client.disconnect()).encode())
                         self.socket.close()
                         self.listener.stop()
                         self.running = False
                     case "FETCH":
-                        fname = command[1] if len(command) <=  2 else ""
-                        hostname = command[2] if len(command) <=  3 else ""
+                        fname = command[1] if len(command) >=  2 else ""
+                        hostname = command[2] if len(command) ==  3 else ""
                         data = Client.fetch(filename=fname, hostname=hostname)
                         self.socket.send(json.dumps(data).encode())
                         reply = json.loads(self.socket.recv(1024).decode())
@@ -209,14 +217,14 @@ class Client:
                         self.listener.makeConnection(address, key)
 
                     case "REMOVE":
-                        fname = command[1] if len(command) <=  2 else ""
+                        fname = command[1] if len(command) >=  2 else ""
                         data = Client.remove(filename=fname)
                         self.socket.send(json.dumps(data).encode())
                     case "HOSTNAME":
-                        usr = command[1] if len(command) <=  2 else ""
+                        usr = command[1] if len(command) ==  2 else ""
                         self.socket.send(json.dumps(Client.modify(username=usr)).encode())
                     case "PASSWORD":
-                        psswd = command[1] if len(command) <=  2 else ""
+                        psswd = command[1] if len(command) ==  2 else ""
                         self.socket.send(json.dumps(Client.modify(password=psswd)).encode())
                     case "HELP":
                         Client.help()
@@ -231,8 +239,8 @@ class Client:
 
     @staticmethod
     def publish(**kwargs):
-        lname = kwargs.get("localname", "")
-        fname = kwargs.get("filename", "")
+        lname = kwargs.get("lname", "")
+        fname = kwargs.get("fname", "")
         if fname == "" or lname == "":
             raise ValueError("filename and localname are required")
         elif not os.path.exists(lname):  
@@ -240,19 +248,20 @@ class Client:
         elif not os.path.isfile(lname):  
             raise FileExistsError(f"{lname} is not a file")
         data = Protocol.publish.copy()
-        data.update({"filename" : fname, "localname" : lname})
+        lname = os.path.abspath(lname)
+        data.update({"fname" : fname, "lname" : lname})
         return data
     
     @staticmethod
     def check(**kwargs):
-        fname = kwargs.get("filename", "")
-        count = kwargs.get("count", "")
-        if not count.isdecimal():
-            raise ValueError("count must be an integer")
+        fname = kwargs.get("fname", "")
+        count = kwargs.get("count")
+        # if not count.isdecimal():
+        #     raise ValueError("count must be an integer")
         if fname == "":
             raise ValueError("filename is required")
         data = Protocol.find.copy()
-        data.update({"filename" : fname, "count" : count})
+        data.update({"fname" : fname, "count" : count})
         return data
 
     @staticmethod
