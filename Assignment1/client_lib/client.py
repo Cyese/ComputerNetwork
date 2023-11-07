@@ -197,10 +197,11 @@ class Client:
                         self.socket.send(json.dumps(data).encode())
                         data = json.loads(self.socket.recv(1024).decode())
                         # TODO: move this data up to UI
-                        hostlist : dict = data["hostlist"]
-                        for value in hostlist.values():
-                            printAlert(f"{value}")
-
+                        hostlist : list[dict] = data["hostlist"]
+                        for value in hostlist:
+                            fname = value.get("fname", "")
+                            ip = value.get("IP", "")
+                            printAlert(f"file: {fname} : {ip}")
                     case "DISCONNECT":
                         self.socket.send(json.dumps(Client.disconnect()).encode())
                         self.socket.close()

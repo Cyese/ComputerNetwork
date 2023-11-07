@@ -21,8 +21,11 @@ class Storage:
 
     def find(self, fname: str):
         result = self.FileList[self.FileList["fname"] == fname]
-        result = result.drop(columns=["lname"])
-        return result.to_dict()
+        result = result.drop(columns=["lname"]).to_dict(orient="records")
+        pack = []
+        for data in result:
+            pack.append({"fname": data["fname"], "IP": data["IP"]})
+        return pack
 
     def signup(self, data: dict[str, str], address: tuple) -> bool:
         usrname : str= data["username"]
