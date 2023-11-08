@@ -120,7 +120,6 @@ class Transimition(threading.Thread):
     def addfile(self, filename):
         self.lname = filename
 
-
 class Client:
     def __init__(self) :
         config = json.load(open("config.json", "r"))  
@@ -149,6 +148,7 @@ class Client:
             logged_in = self.login(usr, psswd)
         printAlert("Connection established")
         printAlert(auth + f" {'success' if logged_in else 'failed'}")
+        return logged_in
 
     # def operate(self, COMMAND: str, **kwargs):
     #     try:    
@@ -220,7 +220,9 @@ class Client:
         lname = os.path.abspath(lname)
         data.update({"fname" : fname, "lname" : lname})
         self.socket.send(json.dumps(data).encode())
-        return
+        data = json.loads(self.socket.recv(1024).decode())
+        print(data)
+        return data
     
     def check(self,**kwargs):
         fname = kwargs.get("fname", "")
@@ -237,7 +239,7 @@ class Client:
 
     def disconnect(self):
         data = Protocol.disconnect.copy()
-        self.socket.send(json.dumps(Client.disconnect()).encode())
+        self.socket.send(json.dumps(data).encode())
         self.socket.close()
         self.listener.stop()
         self.running = False
@@ -256,7 +258,7 @@ class Client:
         address = (address[0][1:-1], int(address[1]))
         localname = reply["localname"]
         self.listener.makeConnection(address, localname)
-        return 
+        return True
     
     def remove(self, **kwargs):
         fname = kwargs.get("filename", "")
@@ -304,7 +306,9 @@ class Client:
             data = Protocol.identify.copy()
             data.update({"port" : port})
             self.socket.send(json.dumps(data).encode())
-            return True
+            return "success"
+        elif data["status"] == "failed":
+            return "failed"
         return False
 
     def login(self, usrname, psswd):
