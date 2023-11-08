@@ -34,12 +34,9 @@ class Service(threading.Thread):
                     fname = msg.get("filename")
                     hostname = msg.get("hostname", "")
                     addr, lname = self.storage.get(fname,hostname=hostname)
-                    key = "1234"
-                    tosender = Protocol.getFile.copy()
-                    tosender.update({"localname": lname, "key": key})
-                    self.socket.sendto(json.dumps(tosender).encode(), addr) 
+                    # self.socket.sendto(json.dumps(tosender).encode(), addr) 
                     torecv = Protocol.connect.copy()
-                    torecv.update({"key": key, "hostname" : str(addr)})
+                    torecv.update({"hostname" : str(addr),"localname": lname})
                     self.socket.send(json.dumps(torecv).encode())    
                 case "FIND":
                     fname = msg.get("fname")
@@ -93,7 +90,8 @@ class Controller(threading.Thread):
                         connection.send(data.encode())
                         data = connection.recv(1024)
                         data = json.loads(data.decode())
-                        ip, port = data.get("ip"), data.get("port")
+                        ip = connection.getpeername()[0]   
+                        port =data.get("port")
                         self.storage.updateIP(usr, ip, port)
                         print(f"Connection open {type(connection)}")
                         new_worker = Service(ip, connection, self.storage)

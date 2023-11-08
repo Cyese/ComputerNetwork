@@ -1,4 +1,4 @@
-,Unnamed: 0,fname,lname,IP
-0,0.0,cyese,/home/cyese/Desktop/ComputerNetwork/Assignment1/client_lib/PROTOCOL.txt,127.0.0.1
-1,1.0,cyese,/home/cyese/Desktop/workspace/code.png,127.0.0.1
-2,,text,/home/cyese/Desktop/ComputerNetwork/Assignment1/client_lib/crai2.txt,192.168.1.10
+fname,lname,IP
+cyese,/home/cyese/Desktop/ComputerNetwork/Assignment1/client_lib/PROTOCOL.txt,127.0.0.1
+text,/home/cyese/Desktop/ComputerNetwork/Assignment1/client_lib/crai2.txt,192.168.1.10
+cal,/home/cyese/Desktop/quickcal.py,192.168.1.10

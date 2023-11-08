@@ -62,22 +62,16 @@ class ClientThreadHandler(threading.Thread):
                 self.keyList.append(data["key"])
                 return ()
             case "request":
-                if data["key"] in self.keyList:
-                    self.keyList.remove(data["key"])
-                    data = Protocol.connect_res.copy()
-                    data.update({"connection" : "allowed"})
-                    return (True, data)
-                else:               
-                    data = Protocol.connect_res.copy()
-                    data.update({"connection" : "refused"})
-                    return (False, data)
+                data = Protocol.connect_res.copy()
+                data.update({"connection" : "allowed"})
+                return (True, data["localname"])
         return ()
         
     def makeConnection(self, address: tuple, key):
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         soc.connect(address)
         data = Protocol.connect_req.copy()
-        data.update({"key" : key})
+        data.update({"lname" : key})
         soc.send(json.dumps(data).encode())
         data = json.loads(soc.recv(1024).decode())
         if data["connection"] == "allowed":
@@ -217,9 +211,8 @@ class Client:
                         self.socket.send(json.dumps(data).encode())
                         reply = json.loads(self.socket.recv(1024).decode())
                         address = (reply["hostname"], int(reply["port"]))
-                        key = reply.get("key")
-                        self.listener.makeConnection(address, key)
-
+                        localname = reply["localname"]
+                        self.listener.makeConnection(address, localname)
                     case "REMOVE":
                         fname = command[1] if len(command) >=  2 else ""
                         data = Client.remove(filename=fname)
@@ -260,8 +253,6 @@ class Client:
     def check(**kwargs):
         fname = kwargs.get("fname", "")
         count = kwargs.get("count")
-        # if not count.isdecimal():
-        #     raise ValueError("count must be an integer")
         if fname == "":
             raise ValueError("filename is required")
         data = Protocol.find.copy()
@@ -320,9 +311,9 @@ class Client:
         self.socket.send(json.dumps(data).encode())
         data = json.loads(self.socket.recv(1024).decode())
         if data["status"] == "success":
-            ip, port = self.start_listerner(usrname)
+            port = self.start_listerner(usrname)
             data = Protocol.identify.copy()
-            data.update({"port" : port, "ip": ip})
+            data.update({"port" : port})
             self.socket.send(json.dumps(data).encode())
             return True
         return False
@@ -333,9 +324,9 @@ class Client:
         self.socket.send(json.dumps(data).encode())
         data = json.loads(self.socket.recv(1024).decode())
         if data["status"] == "success":
-            ip, port = self.start_listerner(usrname)
+            port = self.start_listerner(usrname)
             data = Protocol.identify.copy()
-            data.update({"port" : port, "ip": ip})
+            data.update({"port" : port})
             self.socket.send(json.dumps(data).encode())
             return True
         return False
@@ -344,11 +335,12 @@ class Client:
     def start_listerner(self, usrname):
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            
             soc.bind(("localhost", 60000))
         except:
             soc.bind(("localhost", 60001))
-        address = soc.getsockname()
+        port = soc.getsockname()[1]
         self.listener = ClientThreadHandler(soc, usrname)
         # self.listener.daemon = True
         self.listener.start()
-        return address
+        return port
