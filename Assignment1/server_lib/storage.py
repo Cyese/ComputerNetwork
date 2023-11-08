@@ -82,3 +82,7 @@ class Storage:
             lname, IP = data["lname"], data["IP"]
             addr = self.gethostnames("IP", IP)
         return (addr, lname)
+
+    def getFileList(self, IP: str):
+        filelist = self.FileList[self.FileList["IP"] == IP]["fname"].to_list()
+        return filelist

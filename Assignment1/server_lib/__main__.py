@@ -9,7 +9,7 @@ while True:
             server.shutdown()
             break
         case 2:
-            server.ping("cyese")
+            server.discover("192.168.1.10")
         case 3:
             server.ping("tarim")
         

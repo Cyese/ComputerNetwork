@@ -28,7 +28,6 @@ class Service(threading.Thread):
                     IP = self.socket.getpeername()[0]
                     self.storage.addfile(fname, lname, IP)
                 case "FETCH":
-                    print(msg)
                     fname = msg.get("filename")
                     hostname = msg.get("hostname", "")
                     addr, lname = self.storage.get(fname,hostname=hostname)
@@ -41,6 +40,7 @@ class Service(threading.Thread):
                     rep = Protocol.find.copy()
                     rep.update({"hostlist" : data})
                     self.socket.send(json.dumps(rep).encode())
+                
                 case _:
                     pass  
 
@@ -147,7 +147,7 @@ class Server:
         print(self.controller.ping(hostname))
 
     def discover(self, IP: str):
-        pass
+        print(self.storage.getFileList(IP))
 
     def ban(self, IP: str):
         pass
