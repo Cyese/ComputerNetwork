@@ -128,7 +128,6 @@ class Client:
         self.socket : socket.socket
         self.listener : ClientThreadHandler
         self.running =True
-        # self.run()
 
     def run(self, data: dict):
         # try:
@@ -138,7 +137,6 @@ class Client:
         except:
             self.socket.connect((self.Server[0], self.Server[1]+2))
         signup = data.get("signup", "")
-
         usr = data.get("usr", "")
         psswd = data.get("psswd", "")
         if signup == "1":
@@ -150,62 +148,50 @@ class Client:
         printAlert("Connection established")
         printAlert(auth + f" {'success' if logged_in else 'failed'}")
 
-    # def operate(self, COMMAND: str, **kwargs):
-    #     try:    
-    #         match COMMAND:
-    #             # case "PUBLISH":
-    #             #     fname = ...
-    #             #     lname = ...
-    #             #     data = Client.publish(fname=fname, lname=lname)
-    #             #     self.socket.send(json.dumps(data).encode())
-    #             # case "CHECK":
-    #             #     fname = command[1] if len(command) >=  2 else ""
-    #             #     count = command[2] if len(command) ==  3 else 3
-    #             #     data = Client.check(fname=fname, count=count)
-    #             #     self.socket.send(json.dumps(data).encode())
-    #             #     data = json.loads(self.socket.recv(1024).decode())
-    #             #     # TODO: move this data up to UI
-    #             #     hostlist : list[dict] = data["hostlist"]
-    #             #     for value in hostlist:
-    #             #         fname = value.get("fname", "")
-    #             #         ip = value.get("IP", "")
-    #             #         printAlert(f"file: {fname} : {ip}")
-    #             # case "DISCONNECT":
-    #             #     self.socket.send(json.dumps(Client.disconnect()).encode())
-    #             #     self.socket.close()
-    #             #     self.listener.stop()
-    #             #     self.running = False
-    #             # case "FETCH":
-    #             #     fname = command[1] if len(command) >=  2 else ""
-    #             #     hostname = command[2] if len(command) ==  3 else ""
-    #             #     data = Client.fetch(filename=fname, hostname=hostname)
-    #             #     self.socket.send(json.dumps(data).encode())
-    #             #     reply = json.loads(self.socket.recv(1024).decode())
-    #             #     address = reply["hostname"][1:-1].split(", ")
-    #             #     address = (address[0][1:-1], int(address[1]))
-    #             #     localname = reply["localname"]
-    #             #     self.listener.makeConnection(address, localname)
-    #             # case "REMOVE":
-    #             #     fname = command[1] if len(command) >=  2 else ""
-    #             #     data = Client.remove(filename=fname)
-    #             #     self.socket.send(json.dumps(data).encode())
-    #             # case "HOSTNAME":
-    #             #     usr = command[1] if len(command) ==  2 else ""
-    #             #     self.socket.send(json.dumps(Client.modify(username=usr)).encode())
-    #             # case "PASSWORD":
-    #             #     psswd = command[1] if len(command) ==  2 else ""
-    #             #     self.socket.send(json.dumps(Client.modify(password=psswd)).encode())
-    #             # case "HELP":
-    #             #     Client.help()
-    #             case _:
-    #                 printFailed("Invalid command. Use HELP for more information")
-    #     except ValueError as e:
-    #         printAlert(str(e))
-    #     except FileNotFoundError as e:
-    #         printAlert(str(e))
-    #     except FileExistsError as e:
-    #         printAlert(str(e))
-    #     return
+    def operate(self, COMMAND: str):
+        command = COMMAND.split(" ")
+        try:    
+            match command:
+                case "PUBLISH":
+                    fname = command[1] if len(command) >=  2 else ""
+                    lname = command[2] if len (command) ==  3 else ""
+                    self.publish(fname=fname, lname=lname)
+                case "CHECK":
+                    fname = command[1] if len(command) >=  2 else ""
+                    count = command[2] if len(command) ==  3 else 3
+                    hostlist = self.check(fname=fname, count=count)
+                    for value in hostlist:
+                        fname = value.get("fname", "")
+                        ip = value.get("IP", "")
+                        printAlert(f"file: {fname} : {ip}")
+                case "DISCONNECT":
+                    self.disconnect()
+                case "FETCH":
+                    fname = command[1] if len(command) >=  2 else ""
+                    hostname = command[2] if len(command) ==  3 else ""
+                    self.fetch(fname=fname, hostname=hostname)
+                case "REMOVE":
+                    fname = command[1] if len(command) >=  2 else ""
+                    self.remove(fname=fname)
+                case "HOSTNAME":
+                    usr = command[1] if len(command) ==  2 else ""
+                    self.modify(0, username=usr)
+                case "PASSWORD":
+                    psswd = command[1] if len(command) ==  2 else ""
+                    self.modify(1, password=psswd)
+                case "HELP":
+                    help_menu = Client.help()
+                    for value in help_menu.values():
+                        printAlert(f"{value[0] <20} | {value[1]}")
+                case _:
+                    printFailed("Invalid command. Use HELP for more information")
+        except ValueError as e:
+            printAlert(str(e))
+        except FileNotFoundError as e:
+            printAlert(str(e))
+        except FileExistsError as e:
+            printAlert(str(e))
+        return
 
     def publish(self, **kwargs):
         lname = kwargs.get("lname", "")
@@ -237,7 +223,7 @@ class Client:
 
     def disconnect(self):
         data = Protocol.disconnect.copy()
-        self.socket.send(json.dumps(Client.disconnect()).encode())
+        self.socket.send(data.encode())
         self.socket.close()
         self.listener.stop()
         self.running = False
