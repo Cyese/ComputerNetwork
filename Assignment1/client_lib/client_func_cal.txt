@@ -1,0 +1,2 @@
+publish:
+Client.opt(topic, payload, qos, retain)

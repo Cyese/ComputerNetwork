@@ -4,7 +4,7 @@ from protocol import Protocol
 
 class Service(threading.Thread):
     def __init__(self, clientIP: str, sock: socket.socket, storage) -> None:
-        super().__init__(target=self.chat)
+        super().__init__(daemon=True, name="Service", target=self.run)
         self.IP = clientIP
         self.socket = sock
         self.disconnect = False
@@ -12,8 +12,6 @@ class Service(threading.Thread):
         self.storage: Storage = storage
         self.start()
 
-    def chat(self):
-        pass
 
     def run(self):
         log = []
@@ -34,7 +32,6 @@ class Service(threading.Thread):
                     fname = msg.get("filename")
                     hostname = msg.get("hostname", "")
                     addr, lname = self.storage.get(fname,hostname=hostname)
-                    # self.socket.sendto(json.dumps(tosender).encode(), addr) 
                     torecv = Protocol.connect.copy()
                     torecv.update({"hostname" : str(addr),"localname": lname})
                     self.socket.send(json.dumps(torecv).encode())    
@@ -81,16 +78,16 @@ class Controller(threading.Thread):
                     connection, address = self.server.accept()
                     recv = connection.recv(1024).decode()
                     data = json.loads(recv)
-                    print(data)
                     if self.aunthenticate(data, address):
                         usr = data.get("username")
                         data = Protocol.authenticate.copy()
                         data["status"] = "success"
+                        ip = connection.getpeername()[0] 
+                        data["IP"] = ip
                         data = json.dumps(data)
                         connection.send(data.encode())
                         data = connection.recv(1024)
                         data = json.loads(data.decode())
-                        ip = connection.getpeername()[0]   
                         port =data.get("port")
                         self.storage.updateIP(usr, ip, port)
                         print(f"Connection open {type(connection)}")
@@ -110,7 +107,6 @@ class Controller(threading.Thread):
 
     def aunthenticate(self, data: dict, address: tuple) -> bool:
         auth: bool
-        # print(type(data))
         _type = data.get("action")
         if _type == "signup":
             auth = self.storage.signup(data, address)
@@ -119,7 +115,7 @@ class Controller(threading.Thread):
         return auth
 
     def ping(self, hostname: str) -> dict:
-        address = self.storage.gethostnames(hostname, "user")
+        address = self.storage.gethostnames("user", hostname)
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         data = Protocol.ping.copy()
         data = json.dumps(data).encode()
@@ -137,7 +133,6 @@ class Controller(threading.Thread):
         self.server.close()
         for thread in self.thread:
             thread.join()
-
 
 class Server:
     def __init__(self) -> None:
@@ -165,15 +160,3 @@ class Server:
     
     def shutdown(self):
         self.controller.stop()
-
-class ServerInteract:
-    def __init__(self) -> None:
-        pass
-
-    def ping(self, IP: str):
-        pass
-
-    def listHostname(self):
-        pass
-
-    # def

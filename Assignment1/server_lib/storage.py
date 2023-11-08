@@ -21,7 +21,7 @@ class Storage:
 
     def find(self, fname: str):
         result = self.FileList[self.FileList["fname"] == fname]
-        result = result.drop(columns=["lname"]).to_dict(orient="records")
+        result = result.drop(columns=["lname"]).to_dict(orient="records") # type: ignore
         pack = []
         for data in result:
             pack.append({"fname": data["fname"], "IP": data["IP"]})
@@ -63,11 +63,10 @@ class Storage:
         return
 
     def gethostnames(self, info,  filter) -> tuple[str, str]:
-        row = self.UserList[self.UserList[info] == filter]
-        if not row.empty:
-            return row['IP'].iloc[0], row['port'].iloc[0]
-        return "", ""
-    
+        row = self.UserList[self.UserList[info] == filter].to_dict(orient="records")[0]
+ 
+        return row.get('IP', ""), row.get('port', )
+ 
     def get(self, fname, **kwarg):
         host = kwarg.get("", None)
         lname : str
