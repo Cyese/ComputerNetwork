@@ -1,6 +1,7 @@
-from handler import *
+from serverGUI import *
 
-server = Server()
+server = ServerGUI()
+server.mainloop()
 input()
 while True:
     val = int(input("[>]"))

@@ -30,6 +30,9 @@ class Storage:
     def signup(self, data: dict[str, str], address: tuple) -> bool:
         usrname : str= data["username"]
         passwrd : str = data["password"]
+        if (self.UserList['user'] == usrname).any() and (self.UserList['IP'] == address[0]).any():
+            return False
+
         if self.UserList.get(usrname) is None:
             self.UserList.loc[len(self.UserList)]= {"user": usrname, "password": passwrd, "IP": address[0], "port" : address[1]} # type: ignore 
             self.write(0)
@@ -83,6 +86,15 @@ class Storage:
             addr = self.gethostnames("IP", IP)
         return (addr, lname)
 
-    def getFileList(self, IP: str):
-        filelist = self.FileList[self.FileList["IP"] == IP]["fname"].to_list()
+    def getFileList(self, hostname: str):
+        clientFiles = pd.merge(self.FileList, self.UserList, on=["IP"])
+        filelist = clientFiles[clientFiles['user'] == hostname]['fname'].unique().tolist()
         return filelist
+
+    def checkLname(self, fname: str, lname: str, ip: str):
+        if ((self.FileList['IP'] == ip) & (self.FileList['lname'] == lname)).any():
+            return "Lname existed"
+        if (self.FileList['fname'] == fname).any():
+            return "Fname existed"
+        return "Pass"
+    

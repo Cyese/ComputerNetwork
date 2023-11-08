@@ -18,7 +18,8 @@ class Service(threading.Thread):
         while not self.disconnect:
         #     # TODO: hadling incoming request and send back the response
             msg = json.loads(self.socket.recv(1024).decode())
-            if msg["type"] == "AUTH" and msg == "disconnect":
+            if msg["type"] == "AUTH" and msg["action"] == "disconnect":
+
                 self.stop()
                 return
             match msg["type"]:
@@ -26,7 +27,20 @@ class Service(threading.Thread):
                     fname = msg.get("fname")
                     lname = msg.get("lname")
                     IP = self.socket.getpeername()[0]
-                    self.storage.addfile(fname, lname, IP)
+                    print(self.storage.checkLname(fname, lname, IP))
+                    match self.storage.checkLname(fname, lname, IP):
+
+                        case "Fname existed":
+                            rep_msg = "Fname existed"
+                            self.socket.send(json.dumps(rep_msg).encode())
+                        case "Lname existed":
+                            rep_msg = "Lname existed"
+                            self.socket.send(json.dumps(rep_msg).encode())
+                        case "Pass":
+                            rep_msg = "Pass"
+                            self.storage.addfile(fname, lname, IP)
+                            self.socket.send(json.dumps(rep_msg).encode())
+
                 case "FETCH":
                     fname = msg.get("filename")
                     hostname = msg.get("hostname", "")
@@ -94,8 +108,9 @@ class Controller(threading.Thread):
                         new_worker = Service(ip, connection, self.storage)
                         self.thread.append(new_worker)
                     else:
-                        data = json.dumps(
-                            {"connection": "unauthorize", "type": "AUTH"})
+                        data = Protocol.authenticate.copy()
+                        data["status"] = "failed"
+                        data = json.dumps(data)
                         connection.send(data.encode())
                         connection.close()
                     for thread in self.thread:
@@ -144,10 +159,14 @@ class Server:
 
 
     def ping(self, hostname: str):
-        print(self.controller.ping(hostname))
+        data = self.controller.ping(hostname)
+        print(data)
+        return data
 
-    def discover(self, IP: str):
-        print(self.storage.getFileList(IP))
+    def discover(self, hostname: str):
+        data = self.storage.getFileList(hostname)
+        print(data)
+        return data
 
     def ban(self, IP: str):
         pass

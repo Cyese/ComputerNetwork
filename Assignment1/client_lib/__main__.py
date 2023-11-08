@@ -1,4 +1,3 @@
-from client import *
-
-
-Client()
+from clientGUI import *
+client = ClientGUI()
+client.mainloop()
