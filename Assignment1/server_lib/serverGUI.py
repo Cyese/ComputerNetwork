@@ -46,7 +46,7 @@ class ServerGUI(tk.Tk):
         self.discovered_files = ttk.Treeview(self.frame_list)
         self.discovered_files["column"] = ("STT", "Filename")
 
-        self.discovered_files.column("#0",width=0,stretch=0)
+        self.discovered_files.column("#0",width=0,stretch=False)
         self.discovered_files.column("STT",width=60)
         self.discovered_files.column("Filename",width=300) 
 
@@ -89,13 +89,13 @@ class ServerGUI(tk.Tk):
         for item in x:
             self.discovered_files.delete(item)
 
-        i = 0
-        for file in file_list:
+        # i = 0
+        for i, file in enumerate(file_list):
             self.discovered_files.insert("", index="end", 
-                values=(i, file))
+                values=(i + 1, file))
             
         self.discovered_files.pack()
-        self.frame_list.pack(pady=10)
+        self.frame_list.pack(pady=10)   
        
             
         pass
@@ -104,5 +104,5 @@ def show_message_box(msg):
     messagebox.showinfo("Thông báo", msg)
 
 
-app = ServerGUI()
-app.mainloop()
+# app = ServerGUI()
+# app.mainloop()

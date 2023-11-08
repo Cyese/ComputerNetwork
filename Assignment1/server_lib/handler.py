@@ -27,9 +27,9 @@ class Service(threading.Thread):
                     fname = msg.get("fname")
                     lname = msg.get("lname")
                     IP = self.socket.getpeername()[0]
+                    hostname = self.storage.getHostname(IP)
                     print(self.storage.checkLname(fname, lname, IP))
                     match self.storage.checkLname(fname, lname, IP):
-
                         case "Fname existed":
                             rep_msg = "Fname existed"
                             self.socket.send(json.dumps(rep_msg).encode())
@@ -38,7 +38,7 @@ class Service(threading.Thread):
                             self.socket.send(json.dumps(rep_msg).encode())
                         case "Pass":
                             rep_msg = "Pass"
-                            self.storage.addfile(fname, lname, IP)
+                            self.storage.addfile(fname, lname, IP, hostname)
                             self.socket.send(json.dumps(rep_msg).encode())
 
                 case "FETCH":
@@ -130,7 +130,7 @@ class Controller(threading.Thread):
         return auth
 
     def ping(self, hostname: str) -> dict:
-        address = self.storage.gethostnames("user", hostname)
+        address = self.storage.getAddress("user", hostname)
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         data = Protocol.ping.copy()
         data = json.dumps(data).encode()

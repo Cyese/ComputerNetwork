@@ -125,7 +125,7 @@ class HomePage(tk.Frame):
 
         #Publish frame
         tab1 = ttk.Frame(notebook)
-        notebook.add(tab1, text="publish", padding=[10,10])
+        notebook.add(tab1, text="publish", padding=[10,10]) #type: ignore
         self.publish_frame = ttk.Frame(tab1)
 
         frame = tk.Frame(self.publish_frame)
@@ -154,7 +154,7 @@ class HomePage(tk.Frame):
 
         #Fetch frame
         tab2 = ttk.Frame(notebook)
-        notebook.add(tab2, text="fetch",padding=[10,10])
+        notebook.add(tab2, text="fetch",padding=[10,10]) # type: ignore
         self.fetch_frame = ttk.Frame(tab2, width=70, height=15)
 
         self.fetch_fname_label = tk.Label(self.fetch_frame, text="Tên file:")
@@ -226,5 +226,5 @@ class HomePage(tk.Frame):
 def show_message_box(msg):
     messagebox.showinfo("Thông báo", msg)
 
-app = ClientGUI()
-app.mainloop()
+# app = ClientGUI()
+# app.mainloop()

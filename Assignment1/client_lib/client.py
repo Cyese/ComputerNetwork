@@ -144,8 +144,9 @@ class Client:
         else: 
             auth = "login"
             logged_in = self.login(usr, psswd)
-        printAlert("Connection established")
+        # printAlert("Connection established")
         printAlert(auth + f" {'success' if logged_in else 'failed'}")
+        return logged_in
 
     def operate(self, COMMAND: str):
         command = COMMAND.split(" ")

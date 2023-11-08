@@ -1,7 +1,0 @@
-Client - server:
-    1. Client signup/login
-    2. Client send authentication request to server
-    3. Server change status of of client to "online"
-
-Client - Client: 
-    1. Client request a file form server

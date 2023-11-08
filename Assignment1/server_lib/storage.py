@@ -10,11 +10,11 @@ class Storage:
         if os.path.exists("data.csv"):
             self.FileList: pd.DataFrame = pd.read_csv("data.csv")
         else:
-            self.FileList: pd.DataFrame = pd.DataFrame(columns=["fname", "lname", "IP"])
+            self.FileList: pd.DataFrame = pd.DataFrame(columns=["fname", "lname", "IP", "user"])
         return
 
-    def addfile(self, filename: str, localname: str, IP : str) -> bool:
-        self.FileList.loc[len(self.FileList)] = {"fname" : filename, "lname": localname, "IP" :IP} # type: ignore
+    def addfile(self, filename: str, localname: str, IP : str, hostname) -> bool:
+        self.FileList.loc[len(self.FileList)] = {"fname" : filename, "lname": localname, "IP" :IP, "user": hostname} # type: ignore
         self.write(1)
         return True
 
@@ -30,7 +30,7 @@ class Storage:
     def signup(self, data: dict[str, str], address: tuple) -> bool:
         usrname : str= data["username"]
         passwrd : str = data["password"]
-        if (self.UserList['user'] == usrname).any() and (self.UserList['IP'] == address[0]).any():
+        if (self.UserList['user'] == usrname).any() or (self.UserList['IP'] == address[0]).any():
             return False
 
         if self.UserList.get(usrname) is None:
@@ -65,11 +65,15 @@ class Storage:
                 self.FileList.to_csv("data.csv")
         return
 
-    def gethostnames(self, info,  filter) -> tuple[str, str]:
+    def getAddress(self, info,  filter) -> tuple[str, str]:
         row = self.UserList[self.UserList[info] == filter].to_dict(orient="records")[0]
  
         return row.get('IP', ""), row.get('port', )
  
+    def gethostnames(self, IP) -> tuple[str, str]:
+        row = self.UserList[self.UserList['IP'] == IP].to_dict(orient="records")[0] 
+        return row.get('user', "")
+
     def get(self, fname, **kwarg):
         host = kwarg.get("", None)
         lname : str
@@ -79,16 +83,16 @@ class Storage:
 
             print(data)
             lname, IP = data["lname"], data["IP"]
-            addr = self.gethostnames("IP", IP)
+            addr = self.getAddress("IP", IP)
         else:
             data = self.FileList[self.FileList["fname"] == fname and self.FileList["IP"] == host].to_dict(orient="records")[0]
             lname, IP = data["lname"], data["IP"]
-            addr = self.gethostnames("IP", IP)
+            addr = self.getAddress("IP", IP)
         return (addr, lname)
 
     def getFileList(self, hostname: str):
-        clientFiles = pd.merge(self.FileList, self.UserList, on=["IP"])
-        filelist = clientFiles[clientFiles['user'] == hostname]['fname'].unique().tolist()
+        filelist = self.FileList[self.FileList['user'] == hostname]['fname']
+        filelist = list(set(filelist.to_list()))
         return filelist
 
     def checkLname(self, fname: str, lname: str, ip: str):
