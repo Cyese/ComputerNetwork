@@ -213,12 +213,15 @@ class HomePage(tk.Frame):
     def fetch(self, controller):
         fname = self.fetch_fname_entry.get()
         hostname = self.fetch_hostname_entry.get()
-        if hostname == "" or fname == "":
+        if fname == "":
             self.fetch_label_notice.config(text="Trường nhập đang trống")
             return
+        elif hostname == "":
+            self.fetch_label_notice.config(text="")
+            controller.client.fetch(fname=fname)
         else:
             self.fetch_label_notice.config(text="")
-        controller.client.fetch(fname=fname, hostname=hostname)
+            controller.client.fetch(fname=fname, hostname=hostname)
 
     def disconnect(self, controller):
         controller.client.disconnect()
