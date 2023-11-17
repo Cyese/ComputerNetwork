@@ -78,12 +78,8 @@ class Transimition(threading.Thread):
                     self.send()
                 case "recv":
                     self.recv() 
-        except Exception as e:
-            # printAlert({str(e)})
-            printFailed("Aborted")
-        finally:
-            self.socket.close()
-
+        except:
+            printAlert("Connection lost")
 
     def recv(self):
         data = json.loads(self.socket.recv(1024).decode())
@@ -96,6 +92,7 @@ class Transimition(threading.Thread):
             while offset < length:  
                 recved = self.socket.recv(1024)
                 file.write(recved)
+                offset += 1024
         return True
 
 
@@ -227,7 +224,7 @@ class Client:
 
     def disconnect(self):
         data = Protocol.disconnect.copy()
-        self.socket.send(data.encode())
+        self.socket.send(json.dumps(data).encode())
         self.socket.close()
         self.listener.stop()
         self.running = False
