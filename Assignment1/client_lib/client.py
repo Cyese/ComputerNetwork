@@ -79,7 +79,7 @@ class Transimition(threading.Thread):
                 case "recv":
                     self.recv() 
         except Exception as e:
-            printAlert({str(e)})
+            # printAlert({str(e)})
             printFailed("Aborted")
         finally:
             self.socket.close()
@@ -92,8 +92,10 @@ class Transimition(threading.Thread):
         if data["status"] == "Error":
             raise ConnectionAbortedError("File is not available")
         with open(os.path.join(os.getcwd(),self.fname), "wb") as file:
-            recved = self.socket.recv(1024)
-            file.write(recved)
+            offset = 0
+            while offset < length:  
+                recved = self.socket.recv(1024)
+                file.write(recved)
         return True
 
 
@@ -232,7 +234,7 @@ class Client:
         return
 
     def fetch(self,**kwargs):
-        fname = kwargs.get("filename", "")
+        fname = kwargs.get("fname", "")
         hostname = kwargs.get("hostname", "")
         if fname == "":
             raise ValueError("filename is required")
