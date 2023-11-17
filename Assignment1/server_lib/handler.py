@@ -27,7 +27,7 @@ class Service(threading.Thread):
                     fname = msg.get("fname")
                     lname = msg.get("lname")
                     IP = self.socket.getpeername()[0]
-                    hostname = self.storage.getHostname(IP)
+                    hostname = self.storage.gethostnames(IP)
                     print(self.storage.checkLname(fname, lname, IP))
                     match self.storage.checkLname(fname, lname, IP):
                         case "Fname existed":
